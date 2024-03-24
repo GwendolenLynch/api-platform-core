@@ -124,13 +124,36 @@ class JsonSchemaGenerateCommandTest extends KernelTestCase
         ]);
     }
 
+    public function testArraySchemaWithNullableAndScalarAndResourceClass(): void
+    {
+        $this->tester->run(['command' => 'api:json-schema:generate', 'resource' => 'ApiPlatform\Tests\Fixtures\TestBundle\Entity\Issue6212\Individual', '--type' => 'output']);
+        $result = $this->tester->getDisplay();
+        $json = json_decode($result, associative: true);
+        $properties = $json['definitions']['Individual.jsonld-read']['properties'];
+
+        $this->assertArrayNotHasKey('type', $properties['species']);
+        $this->assertArrayNotHasKey('oneOf', $properties['species']);
+
+        $this->assertArrayHasKey('anyOf', $properties['species']);
+        $this->assertEquals($properties['species']['anyOf'], [
+            ['type' => 'integer'],
+            ['$ref' => '#/definitions/Species.jsonld'],
+            ['type' => 'null'],
+        ]);
+    }
+
     public function testArraySchemaWithMultipleUnionTypes(): void
     {
         $this->tester->run(['command' => 'api:json-schema:generate', 'resource' => 'ApiPlatform\Tests\Fixtures\TestBundle\Entity\Issue6212\Nest', '--type' => 'output']);
         $result = $this->tester->getDisplay();
         $json = json_decode($result, associative: true);
+        $properties = $json['definitions']['Nest.jsonld']['properties'];
 
-        $this->assertEquals($json['definitions']['Nest.jsonld']['properties']['owner']['anyOf'], [
+        $this->assertArrayNotHasKey('type', $properties['owner']);
+        $this->assertArrayNotHasKey('oneOf', $properties['owner']);
+
+        $this->assertArrayHasKey('anyOf', $properties['owner']);
+        $this->assertEquals($properties['owner']['anyOf'], [
             ['$ref' => '#/definitions/Wren.jsonld'],
             ['$ref' => '#/definitions/Robin.jsonld'],
             ['type' => 'null'],
