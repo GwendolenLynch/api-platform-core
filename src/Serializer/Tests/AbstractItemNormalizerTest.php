@@ -24,6 +24,7 @@ use ApiPlatform\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface
 use ApiPlatform\Metadata\Property\PropertyNameCollection;
 use ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface;
 use ApiPlatform\Metadata\Resource\ResourceMetadataCollection;
+use ApiPlatform\Metadata\ResourceAccessCheckerInterface;
 use ApiPlatform\Metadata\ResourceClassResolverInterface;
 use ApiPlatform\Metadata\UrlGeneratorInterface;
 use ApiPlatform\Serializer\AbstractItemNormalizer;
@@ -37,7 +38,6 @@ use ApiPlatform\Serializer\Tests\Fixtures\ApiResource\PropertyCollectionIriOnly;
 use ApiPlatform\Serializer\Tests\Fixtures\ApiResource\PropertyCollectionIriOnlyRelation;
 use ApiPlatform\Serializer\Tests\Fixtures\ApiResource\RelatedDummy;
 use ApiPlatform\Serializer\Tests\Fixtures\ApiResource\SecuredDummy;
-use ApiPlatform\Symfony\Security\ResourceAccessCheckerInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
@@ -204,7 +204,7 @@ class AbstractItemNormalizerTest extends TestCase
         $resourceAccessChecker->isGranted(
             SecuredDummy::class,
             'is_granted(\'ROLE_ADMIN\')',
-            ['object' => $dummy]
+            ['object' => $dummy, 'property' => 'adminOnlyProperty']
         )->willReturn(false);
 
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
@@ -352,7 +352,7 @@ class AbstractItemNormalizerTest extends TestCase
         $resourceAccessChecker->isGranted(
             SecuredDummy::class,
             'is_granted(\'ROLE_ADMIN\')',
-            ['object' => null]
+            ['object' => null, 'property' => 'adminOnlyProperty']
         )->willReturn(false);
 
         $normalizer = $this->getMockForAbstractClass(AbstractItemNormalizer::class, [
@@ -464,12 +464,12 @@ class AbstractItemNormalizerTest extends TestCase
         $resourceAccessChecker->isGranted(
             SecuredDummy::class,
             'true',
-            ['object' => null]
+            ['object' => null, 'property' => 'ownerOnlyProperty']
         )->willReturn(true);
         $resourceAccessChecker->isGranted(
             SecuredDummy::class,
             'true',
-            ['object' => $dummy]
+            ['object' => $dummy, 'property' => 'ownerOnlyProperty']
         )->willReturn(true);
 
         $normalizer = $this->getMockForAbstractClass(AbstractItemNormalizer::class, [
@@ -528,12 +528,12 @@ class AbstractItemNormalizerTest extends TestCase
         $resourceAccessChecker->isGranted(
             SecuredDummy::class,
             'false',
-            ['object' => null]
+            ['object' => null, 'property' => 'ownerOnlyProperty']
         )->willReturn(false);
         $resourceAccessChecker->isGranted(
             SecuredDummy::class,
             'false',
-            ['object' => $dummy]
+            ['object' => $dummy, 'property' => 'ownerOnlyProperty']
         )->willReturn(false);
 
         $normalizer = $this->getMockForAbstractClass(AbstractItemNormalizer::class, [
@@ -593,7 +593,7 @@ class AbstractItemNormalizerTest extends TestCase
         $resourceAccessChecker->isGranted(
             SecuredDummy::class,
             'false',
-            ['object' => $dummy, 'previous_object' => $dummy]
+            ['object' => $dummy, 'previous_object' => $dummy, 'property' => 'ownerOnlyProperty']
         )->willReturn(false);
 
         $normalizer = $this->getMockForAbstractClass(AbstractItemNormalizer::class, [

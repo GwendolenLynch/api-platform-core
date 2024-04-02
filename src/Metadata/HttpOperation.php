@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Metadata;
 
+use ApiPlatform\OpenApi\Attributes\Webhook;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use ApiPlatform\State\OptionsInterface;
 use Symfony\Component\WebLink\Link as WebLink;
@@ -55,6 +56,7 @@ class HttpOperation extends Operation
      *     stale_while_revalidate?: int,
      *     stale-if-error?: int,
      * }|null $cacheHeaders {@see https://api-platform.com/docs/core/performance/#setting-custom-http-cache-headers}
+     * @param array<string, string>|null $headers
      * @param array{
      *     field: string,
      *     direction: string,
@@ -144,11 +146,12 @@ class HttpOperation extends Operation
         protected ?array $schemes = null,
         protected ?string $condition = null,
         protected ?string $controller = null,
+        protected ?array $headers = null,
         protected ?array $cacheHeaders = null,
         protected ?array $paginationViaCursor = null,
         protected ?array $hydraContext = null,
         protected ?array $openapiContext = null, // TODO Remove in 4.0
-        protected bool|OpenApiOperation|null $openapi = null,
+        protected bool|OpenApiOperation|Webhook|null $openapi = null,
         protected ?array $exceptionToStatus = null,
         protected ?bool $queryParameterValidationEnabled = null,
         protected ?array $links = null,
@@ -170,11 +173,11 @@ class HttpOperation extends Operation
         ?array $normalizationContext = null,
         ?array $denormalizationContext = null,
         ?bool $collectDenormalizationErrors = null,
-        ?string $security = null,
+        string|\Stringable|null $security = null,
         ?string $securityMessage = null,
-        ?string $securityPostDenormalize = null,
+        string|\Stringable|null $securityPostDenormalize = null,
         ?string $securityPostDenormalizeMessage = null,
-        ?string $securityPostValidation = null,
+        string|\Stringable|null $securityPostValidation = null,
         ?string $securityPostValidationMessage = null,
         ?string $deprecationReason = null,
         ?array $filters = null,
@@ -197,6 +200,7 @@ class HttpOperation extends Operation
         $provider = null,
         $processor = null,
         ?OptionsInterface $stateOptions = null,
+        array|Parameters|null $parameters = null,
         array $extraProperties = [],
     ) {
         parent::__construct(
@@ -244,6 +248,7 @@ class HttpOperation extends Operation
             provider: $provider,
             processor: $processor,
             stateOptions: $stateOptions,
+            parameters: $parameters,
             extraProperties: $extraProperties
         );
     }
@@ -511,6 +516,19 @@ class HttpOperation extends Operation
         return $self;
     }
 
+    public function getHeaders(): ?array
+    {
+        return $this->headers;
+    }
+
+    public function withHeaders(array $headers): self
+    {
+        $self = clone $this;
+        $self->headers = $headers;
+
+        return $self;
+    }
+
     public function getCacheHeaders(): ?array
     {
         return $this->cacheHeaders;
@@ -563,12 +581,12 @@ class HttpOperation extends Operation
         return $self;
     }
 
-    public function getOpenapi(): bool|OpenApiOperation|null
+    public function getOpenapi(): bool|OpenApiOperation|Webhook|null
     {
         return $this->openapi;
     }
 
-    public function withOpenapi(bool|OpenApiOperation $openapi): self
+    public function withOpenapi(bool|OpenApiOperation|Webhook $openapi): self
     {
         $self = clone $this;
         $self->openapi = $openapi;

@@ -1,5 +1,122 @@
 # Changelog
 
+## v3.3.0-beta.1
+
+### Bug fixes
+
+* [23a9f2a7f](https://github.com/api-platform/core/commit/23a9f2a7f6b868c1eaaa3ec967bd718790f6caa6) fix(openapi): webhook has pathItem
+* [54638d3ca](https://github.com/api-platform/core/commit/54638d3ca6d497ff829a6978dd1db9137b5bcf3a) fix: fix PHPUnit 11 compatibility (#6202)
+* [bc96751e0](https://github.com/api-platform/core/commit/bc96751e040406de65a690f53003c3db5626a013) fix(graphql): nested collection for mongo (#6174)
+* [ca6be326d](https://github.com/api-platform/core/commit/ca6be326d533282a4a1c1284a289c2f1e3f92219) fix(doctrine): fix case on Mercure ExpressionLanguage (#6207)
+* [dad8b7df3](https://github.com/api-platform/core/commit/dad8b7df3ce47189925dad2106bb4d6477ce8f45) fix(validation): move validation exception resource (#6204)
+
+
+### Features
+
+* [0b724d93b](https://github.com/api-platform/core/commit/0b724d93b7585ce1f49fc97971840c986ecc495b) feat(openapi): document parameter
+* [125f2cef4](https://github.com/api-platform/core/commit/125f2cef42e6584c219fd21982a7999d141a2f9d) feat: add webhook - openapi (#5873)
+* [31d24aca4](https://github.com/api-platform/core/commit/31d24aca4b8d45f9838546954b61a55f25c39799) feat(hydra): read hydra:property from ApiProperty::jsonLdContext (#6240)
+* [3ad3836d5](https://github.com/api-platform/core/commit/3ad3836d5427951ff2519380738f6c423f697742) feat(metadata): attribute Parameter (#6246)
+* [52322048c](https://github.com/api-platform/core/commit/52322048cfccdb68ddf2df6a7952efb3e23ffece) feat(state): provide parameter values
+* [5523bf5df](https://github.com/api-platform/core/commit/5523bf5df93783582bed5591ff35c71e0942a978) feat(openapi): disable response override (#6221)
+* [683c34c6f](https://github.com/api-platform/core/commit/683c34c6f5721caede4f739e11c944b77b2243dc) feat(hydra): parameter documentation
+* [732d4aa8c](https://github.com/api-platform/core/commit/732d4aa8c32e6b3ec01a713b032a2c01adf66e5d) feat(symfony): parameter DI for metadata state serializer
+* [842030d55](https://github.com/api-platform/core/commit/842030d55737e8eb15ce575c89f5449493a157d8) feat(doctrine): parameter filter extension (#6248)
+* [b79c7ae0e](https://github.com/api-platform/core/commit/b79c7ae0e88b6dee9d97d73ce16f6ff2a974b272) feat(metadata): allow \Stringable for security parameters (#6095)
+* [e427bba70](https://github.com/api-platform/core/commit/e427bba70e1ecdcfe76dbe9926153156323cb371) feat(jsonschema): JSON:API schema factory (#6250)
+
+The v3.3.0-beta.1 introduces a new `QueryParameter` attribute to improve [the filtering system](https://github.com/api-platform/core/blob/main/docs/adr/0006-filtering-system-and-parameters.md).
+
+## v3.3.0-alpha.2
+
+### Bug fixes
+
+* [bc8d57b88](https://github.com/api-platform/core/commit/bc8d57b885e3b1db42269a29e887ecca17f2a99c) fix(symfony): reduce json-problem dependencies (#6169)
+* [bfd759b62](https://github.com/api-platform/core/commit/bfd759b627990926fddd11c6737af8f993af7bb5) fix: components split dependencies (#6186)
+* [c01e10ff3](https://github.com/api-platform/core/commit/c01e10ff323fac6f6e3549e7e90d8ee01d9285f3) fix(hydra): remove dependency from ApiPlatform/Api dependency (#6154)
+
+### Features
+
+* [24a1a18cb](https://github.com/api-platform/core/commit/24a1a18cbe706c5a3bb4d5602b70c0a68ff8a757) feat: improve ApiProperty::security using property name (#5853)
+* [3d1428e4d](https://github.com/api-platform/core/commit/3d1428e4d2e4342918becf098da8832ac50fef1b) feat(symfony): add getOperation Expression Language function on Mercure topics (#5854)
+* [6b00cea91](https://github.com/api-platform/core/commit/6b00cea914dc5f9c42ca237a3ff498d629a0efb8) feat(graphql): partial pagination for page based pagination (#6120)
+* [79fe01b97](https://github.com/api-platform/core/commit/79fe01b970d90e3c80880f54fc0446b5294173f0) feat(doctrine): paginators for Doctrine Collection & Selectable (#6153)
+* [89c9229f4](https://github.com/api-platform/core/commit/89c9229f484cb409ef3eb2bd88cccc6ddc856378) feat(graphql): support nullable embedded relations in GraphQL types (#6100)
+
+## v3.3.0-alpha.1
+
+### Bug fixes
+
+* [2828157f6](https://github.com/api-platform/core/commit/2828157f61e43783d49375dae689e898cc7f91bb) fix(doctrine): constants case sensitive values
+* [bbc99cfbe](https://github.com/api-platform/core/commit/bbc99cfbe7b0ed20e38178ee9bff15c71289f059) fix(serializer): improve TagCollector context (JSONAPI HAL) (#6076)
+* [e10cc5ecf](https://github.com/api-platform/core/commit/e10cc5ecf88b98f862222b2e3fea0f4ace94c515) fix(graphql): use normalization context to get item from IRI (#5915)
+
+### Features
+
+* [4f59677d4](https://github.com/api-platform/core/commit/4f59677d4e55bfdfb66620592a5ab7ffd57c8d8e) feat(parametervalidator): create api-platform/parameter-validator component
+* [670e7fbea](https://github.com/api-platform/core/commit/670e7fbeae3276373fa1a5805a74997091a5428c) feat(serializer): collect cache tags using a TagCollector (#5758)
+* [6b79b6f47](https://github.com/api-platform/core/commit/6b79b6f47fa498bdc6c92b574c176f3897e07ec2) feat(elasticsearch): filtering on nested fields (#5835)
+* [8e3a48810](https://github.com/api-platform/core/commit/8e3a488103a51becd9c900ec5a3849b806121fbf) feat: enable Swagger UI deep linking (#6051)
+* [9083765b0](https://github.com/api-platform/core/commit/9083765b0175aabe8e0043889383f4a0697ec098) feat(graphql): support enum collection as property (#5955)
+* [a749fe849](https://github.com/api-platform/core/commit/a749fe8494a5b3ca41139a418ed1e29c3e7b33a6) feat(doctrine): allow to extend link handling (#6061)
+* [b48836690](https://github.com/api-platform/core/commit/b488366901635dc665f1bb95a4a059aaa30cefd3) feat(symfony): Link security (#5290)
+* [cc9f6a518](https://github.com/api-platform/core/commit/cc9f6a518222598d20556fc1ec62b7c4be52bf52) feat(symfony): request and view kernel listeners (#6102)
+* [ce9ab8226](https://github.com/api-platform/core/commit/ce9ab8226934bfac45e3408e9468bf32a02aa2e9) feat(metadata): headers configuration (#6074)
+
+Components: 
+  - `api-platform/parametervalidator`
+  - `api-platform/doctrine-common`
+  - `api-platform/doctrine-orm`
+  - `api-platform/doctrine-odm`
+
+A new interface `ApiPlatform\Serializer\TagCollectorInterface` allows to collect cache tags (IRIs) during serialization instead of using API Platform defaults.
+An experimental feature (#5290) gives the ability to use `security` on sub resource links.
+
+If you use controllers you should use: 
+
+```yaml
+api_platform:
+    use_symfony_listeners: true
+```
+
+The default is `false` you can get rid of the `event_listeners_backward_compatibility_layer` flag. You can now force an operation state, for example:
+
+```php
+<?php
+
+#[Delete(validate: true)]
+#[Post(read: true)]
+class Book {}
+```
+
+These namespaces are deprecated: 
+
+- `ApiPlatform\Api`
+- `ApiPlatform\Exception`
+- `ApiPlatform\Problem`
+- `ApiPlatform\Action`
+- `ApiPlatform\Util`
+
+Most of the classes have moved to `ApiPlatform\Metadata`.
+
+If a format is not specified in either the global configuration or the `outputFormats` of an operation, you'll get a 406 Not Acceptable error:
+
+```yaml
+api_platform:
+    formats:
+        jsonld: ['application/ld+json']
+        form: ['multipart/form-data']
+```
+
+## v3.2.19
+
+### Bug fixes
+
+* [0154fbf00](https://github.com/api-platform/core/commit/0154fbf00635b46e151c917378e5fe4d76dc1a83) fix(elasticsearch): wrong namespace for stateOptions (#6260)
+* [4adc07524](https://github.com/api-platform/core/commit/4adc0752471910a1dca104c1ac8d9c1dbebf268e) fix: multiple error routes #6214 (#6263)
+* [88d88ed2c](https://github.com/api-platform/core/commit/88d88ed2c41cca89da4ef2185d58adb2ea91d20c) fix(doctrine): wrong return type without name converter #6079 (#6254)
+* [db50a46c1](https://github.com/api-platform/core/commit/db50a46c16689b7fb4db79b1d4ef7e1ad094d358) fix(doctrine): stateOptions force resource class on collection (#6255)
+
 ## v3.2.18
 
 ### Bug fixes

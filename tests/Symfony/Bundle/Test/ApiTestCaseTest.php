@@ -35,7 +35,7 @@ class ApiTestCaseTest extends ApiTestCase
 
     public static function providerFormats(): iterable
     {
-        // yield 'jsonapi' => ['jsonapi', 'application/vnd.api+json'];
+        yield 'jsonapi' => ['jsonapi', 'application/vnd.api+json'];
         yield 'jsonhal' => ['jsonhal', 'application/hal+json'];
         yield 'jsonld' => ['jsonld', 'application/ld+json'];
     }
@@ -307,8 +307,7 @@ JSON;
      */
     public function testGetMercureMessages(): void
     {
-        // debug mode is required to get Mercure TraceableHub
-        $this->recreateSchema(['debug' => true, 'environment' => 'mercure']);
+        $this->recreateSchema(['environment' => 'mercure']);
 
         self::createClient()->request('POST', '/direct_mercures', [
             'headers' => [

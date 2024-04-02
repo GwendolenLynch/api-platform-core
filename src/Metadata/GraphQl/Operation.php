@@ -15,6 +15,7 @@ namespace ApiPlatform\Metadata\GraphQl;
 
 use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Operation as AbstractOperation;
+use ApiPlatform\Metadata\Parameters;
 use ApiPlatform\State\OptionsInterface;
 
 class Operation extends AbstractOperation
@@ -57,11 +58,11 @@ class Operation extends AbstractOperation
         ?array $normalizationContext = null,
         ?array $denormalizationContext = null,
         ?bool $collectDenormalizationErrors = null,
-        ?string $security = null,
+        string|\Stringable|null $security = null,
         ?string $securityMessage = null,
-        ?string $securityPostDenormalize = null,
+        string|\Stringable|null $securityPostDenormalize = null,
         ?string $securityPostDenormalizeMessage = null,
-        ?string $securityPostValidation = null,
+        string|\Stringable|null $securityPostValidation = null,
         ?string $securityPostValidationMessage = null,
         ?string $deprecationReason = null,
         ?array $filters = null,
@@ -84,6 +85,7 @@ class Operation extends AbstractOperation
         $provider = null,
         $processor = null,
         ?OptionsInterface $stateOptions = null,
+        array|Parameters|null $parameters = null,
         array $extraProperties = []
     ) {
         parent::__construct(
@@ -131,6 +133,7 @@ class Operation extends AbstractOperation
             provider: $provider,
             processor: $processor,
             stateOptions: $stateOptions,
+            parameters: $parameters,
             extraProperties: $extraProperties
         );
     }

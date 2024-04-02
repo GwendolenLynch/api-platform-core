@@ -29,6 +29,7 @@ use ApiPlatform\Metadata\Operations;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\QueryParameter;
 use ApiPlatform\Metadata\Resource\Factory\ExtractorResourceMetadataCollectionFactory;
 use ApiPlatform\Metadata\Resource\Factory\OperationDefaultsTrait;
 use ApiPlatform\Metadata\Resource\ResourceMetadataCollection;
@@ -36,12 +37,10 @@ use ApiPlatform\Metadata\Tests\Extractor\Adapter\ResourceAdapterInterface;
 use ApiPlatform\Metadata\Tests\Extractor\Adapter\XmlResourceAdapter;
 use ApiPlatform\Metadata\Tests\Extractor\Adapter\YamlResourceAdapter;
 use ApiPlatform\Metadata\Tests\Fixtures\ApiResource\Comment;
-use ApiPlatform\Metadata\Tests\Fixtures\StateOptions;
 use ApiPlatform\Metadata\Util\CamelCaseToSnakeCaseNameConverter;
 use ApiPlatform\OpenApi\Model\ExternalDocumentation;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use ApiPlatform\OpenApi\Model\RequestBody;
-use ApiPlatform\State\OptionsInterface;
 use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\WebLink\Link;
@@ -341,6 +340,7 @@ final class ResourceMetadataCompatibilityTest extends TestCase
                     'status' => 204,
                     'host' => 'api-platform.com',
                     'schemes' => ['https'],
+                    'headers' => ['key' => 'value'],
                     'condition' => 'request.headers.has(\'Accept\')',
                     'controller' => 'App\Controller\CustomController',
                     'class' => GetCollection::class,
@@ -419,6 +419,9 @@ final class ResourceMetadataCompatibilityTest extends TestCase
                     ],
                     'links' => [
                         ['rel' => 'http://www.w3.org/ns/json-ld#error', 'href' => 'http://www.w3.org/ns/hydra/error'],
+                    ],
+                    'parameters' => [
+                        'author' => ['key' => 'author', 'required' => true, 'schema' => ['type' => 'string']],
                     ],
                 ],
                 [
@@ -506,6 +509,8 @@ final class ResourceMetadataCompatibilityTest extends TestCase
         'paginationViaCursor',
         'stateOptions',
         'links',
+        'headers',
+        'parameters',
     ];
 
     /**
@@ -526,12 +531,8 @@ final class ResourceMetadataCompatibilityTest extends TestCase
             throw new AssertionFailedError('Failed asserting that the schema is valid according to '.ApiResource::class, 0, $exception);
         }
 
-        $a = new ResourceMetadataCollection(self::RESOURCE_CLASS, $this->buildApiResources());
-        $b = $collection;
-
-        $this->assertEquals($a[0], $b[0]);
-
-        $this->assertEquals(new ResourceMetadataCollection(self::RESOURCE_CLASS, $this->buildApiResources()), $collection);
+        $resources = $this->buildApiResources();
+        $this->assertEquals(new ResourceMetadataCollection(self::RESOURCE_CLASS, $resources), $collection);
     }
 
     public static function getExtractors(): array
@@ -720,7 +721,7 @@ final class ResourceMetadataCompatibilityTest extends TestCase
         return $operations;
     }
 
-    private function withStateOptions(array $values): ?OptionsInterface
+    private function withStateOptions(array $values)
     {
         if (!$values) {
             return null;
@@ -733,7 +734,7 @@ final class ResourceMetadataCompatibilityTest extends TestCase
         $configuration = reset($values);
         switch (key($values)) {
             case 'elasticsearchOptions':
-                return new StateOptions($configuration['index'] ?? null, $configuration['type'] ?? null);
+                return null;
         }
 
         throw new \LogicException(sprintf('Unsupported "%s" state options.', key($values)));
@@ -746,5 +747,19 @@ final class ResourceMetadataCompatibilityTest extends TestCase
         }
 
         return [new Link($values[0]['rel'] ?? null, $values[0]['href'] ?? null)];
+    }
+
+    private function withParameters(array $values): ?array
+    {
+        if (!$values) {
+            return null;
+        }
+
+        $parameters = [];
+        foreach ($values as $k => $value) {
+            $parameters[$k] = new QueryParameter(key: $value['key'], required: $value['required'], schema: $value['schema']);
+        }
+
+        return $parameters;
     }
 }

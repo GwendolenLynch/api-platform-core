@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 namespace ApiPlatform\GraphQl\Resolver\Factory;
 
+use ApiPlatform\GraphQl\State\Provider\NoopProvider;
 use ApiPlatform\Metadata\GraphQl\Mutation;
 use ApiPlatform\Metadata\GraphQl\Operation;
 use ApiPlatform\Metadata\GraphQl\Query;
+use ApiPlatform\State\Pagination\ArrayPaginator;
 use ApiPlatform\State\ProcessorInterface;
 use ApiPlatform\State\ProviderInterface;
 use GraphQL\Type\Definition\ResolveInfo;
@@ -33,6 +35,11 @@ class ResolverFactory implements ResolverFactoryInterface
         return function (?array $source, array $args, $context, ResolveInfo $info) use ($resourceClass, $rootClass, $operation) {
             // Data already fetched and normalized (field or nested resource)
             if ($body = $source[$info->fieldName] ?? null) {
+                // special treatment for nested resources without a resolver/provider
+                if ($operation instanceof Query && $operation->getNested() && !$operation->getResolver() && (!$operation->getProvider() || NoopProvider::class === $operation->getProvider())) {
+                    return $this->resolve($source, $args, $info, $rootClass, $operation, new ArrayPaginator($body, 0, \count($body)));
+                }
+
                 return $body;
             }
 
@@ -45,23 +52,28 @@ class ResolverFactory implements ResolverFactoryInterface
                 return null;
             }
 
-            // Handles relay nodes
-            $operation ??= new Query();
-
-            $graphQlContext = [];
-            $context = ['source' => $source, 'args' => $args, 'info' => $info, 'root_class' => $rootClass, 'graphql_context' => &$graphQlContext];
-
-            if (null === $operation->canValidate()) {
-                $operation = $operation->withValidate($operation instanceof Mutation);
-            }
-
-            $body = $this->provider->provide($operation, [], $context);
-
-            if (null === $operation->canWrite()) {
-                $operation = $operation->withWrite($operation instanceof Mutation && null !== $body);
-            }
-
-            return $this->processor->process($body, $operation, [], $context);
+            return $this->resolve($source, $args, $info, $rootClass, $operation, null);
         };
+    }
+
+    private function resolve(?array $source, array $args, ResolveInfo $info, ?string $rootClass = null, ?Operation $operation = null, mixed $body = null)
+    {
+        // Handles relay nodes
+        $operation ??= new Query();
+
+        $graphQlContext = [];
+        $context = ['source' => $source, 'args' => $args, 'info' => $info, 'root_class' => $rootClass, 'graphql_context' => &$graphQlContext];
+
+        if (null === $operation->canValidate()) {
+            $operation = $operation->withValidate($operation instanceof Mutation);
+        }
+
+        $body ??= $this->provider->provide($operation, [], $context);
+
+        if (null === $operation->canWrite()) {
+            $operation = $operation->withWrite($operation instanceof Mutation && null !== $body);
+        }
+
+        return $this->processor->process($body, $operation, [], $context);
     }
 }

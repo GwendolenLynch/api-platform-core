@@ -65,6 +65,7 @@ final class XmlResourceAdapter implements ResourceAdapterInterface
         'stateOptions',
         'collectDenormalizationErrors',
         'links',
+        'parameters',
     ];
 
     /**
@@ -505,6 +506,36 @@ XML_WRAP
         $childNode = $node->addChild('link');
         $childNode->addAttribute('rel', $values[0]['rel']);
         $childNode->addAttribute('href', $values[0]['href']);
+    }
+
+    private function buildHeaders(\SimpleXMLElement $resource, ?array $values = null): void
+    {
+        if (!$values) {
+            return;
+        }
+
+        $node = $resource->addChild('headers');
+        foreach ($values as $key => $value) {
+            $childNode = $node->addChild('header');
+            $childNode->addAttribute('key', $key);
+            $childNode->addAttribute('value', $value);
+        }
+    }
+
+    private function buildParameters(\SimpleXMLElement $resource, ?array $values = null): void
+    {
+        if (!$values) {
+            return;
+        }
+
+        $node = $resource->addChild('parameters');
+        foreach ($values as $key => $value) {
+            $childNode = $node->addChild('parameter');
+            $childNode->addAttribute('in', 'query');
+            $childNode->addAttribute('key', $key);
+            $childNode->addAttribute('required', $this->parse($value['required']));
+            $this->buildValues($childNode->addChild('schema'), $value['schema']);
+        }
     }
 
     private function parse($value): ?string

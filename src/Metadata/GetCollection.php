@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ApiPlatform\Metadata;
 
+use ApiPlatform\OpenApi\Attributes\Webhook;
 use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use ApiPlatform\State\OptionsInterface;
 
@@ -39,11 +40,12 @@ final class GetCollection extends HttpOperation implements CollectionOperationIn
         ?array $schemes = null,
         ?string $condition = null,
         ?string $controller = null,
+        ?array $headers = null,
         ?array $cacheHeaders = null,
         ?array $paginationViaCursor = null,
         ?array $hydraContext = null,
         ?array $openapiContext = null,
-        bool|OpenApiOperation|null $openapi = null,
+        bool|OpenApiOperation|Webhook|null $openapi = null,
         ?array $exceptionToStatus = null,
         ?bool $queryParameterValidationEnabled = null,
         ?array $links = null,
@@ -65,11 +67,11 @@ final class GetCollection extends HttpOperation implements CollectionOperationIn
         ?array $normalizationContext = null,
         ?array $denormalizationContext = null,
         ?bool $collectDenormalizationErrors = null,
-        ?string $security = null,
+        string|\Stringable|null $security = null,
         ?string $securityMessage = null,
-        ?string $securityPostDenormalize = null,
+        string|\Stringable|null $securityPostDenormalize = null,
         ?string $securityPostDenormalizeMessage = null,
-        ?string $securityPostValidation = null,
+        string|\Stringable|null $securityPostValidation = null,
         ?string $securityPostValidationMessage = null,
         ?string $deprecationReason = null,
         ?array $filters = null,
@@ -92,6 +94,7 @@ final class GetCollection extends HttpOperation implements CollectionOperationIn
         $provider = null,
         $processor = null,
         ?OptionsInterface $stateOptions = null,
+        array|Parameters|null $parameters = null,
         array $extraProperties = [],
         private ?string $itemUriTemplate = null,
     ) {
@@ -115,6 +118,7 @@ final class GetCollection extends HttpOperation implements CollectionOperationIn
             schemes: $schemes,
             condition: $condition,
             controller: $controller,
+            headers: $headers,
             cacheHeaders: $cacheHeaders,
             paginationViaCursor: $paginationViaCursor,
             hydraContext: $hydraContext,
@@ -166,6 +170,7 @@ final class GetCollection extends HttpOperation implements CollectionOperationIn
             name: $name,
             provider: $provider,
             processor: $processor,
+            parameters: $parameters,
             extraProperties: $extraProperties,
             stateOptions: $stateOptions,
         );

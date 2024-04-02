@@ -14,11 +14,13 @@ declare(strict_types=1);
 namespace ApiPlatform\Hydra\Serializer;
 
 use ApiPlatform\Api\FilterInterface as LegacyFilterInterface;
-use ApiPlatform\Api\FilterLocatorTrait;
 use ApiPlatform\Api\ResourceClassResolverInterface as LegacyResourceClassResolverInterface;
 use ApiPlatform\Doctrine\Odm\State\Options as ODMOptions;
 use ApiPlatform\Doctrine\Orm\State\Options;
 use ApiPlatform\Metadata\FilterInterface;
+use ApiPlatform\Metadata\Parameter;
+use ApiPlatform\Metadata\Parameters;
+use ApiPlatform\Metadata\QueryParameterInterface;
 use ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface;
 use ApiPlatform\Metadata\ResourceClassResolverInterface;
 use ApiPlatform\Serializer\CacheableSupportsMethodInterface;
@@ -37,14 +39,14 @@ use Symfony\Component\Serializer\Serializer;
  */
 final class CollectionFiltersNormalizer implements NormalizerInterface, NormalizerAwareInterface, CacheableSupportsMethodInterface
 {
-    use FilterLocatorTrait;
+    private ?ContainerInterface $filterLocator = null;
 
     /**
      * @param ContainerInterface $filterLocator The new filter locator or the deprecated filter collection
      */
     public function __construct(private readonly NormalizerInterface $collectionNormalizer, private readonly ResourceMetadataCollectionFactoryInterface $resourceMetadataCollectionFactory, private readonly LegacyResourceClassResolverInterface|ResourceClassResolverInterface $resourceClassResolver, ContainerInterface $filterLocator)
     {
-        $this->setFilterLocator($filterLocator);
+        $this->filterLocator = $filterLocator;
     }
 
     /**
@@ -98,8 +100,10 @@ final class CollectionFiltersNormalizer implements NormalizerInterface, Normaliz
         }
         $resourceClass = $this->resourceClassResolver->getResourceClass($object, $context['resource_class']);
         $operation = $context['operation'] ?? $this->resourceMetadataCollectionFactory->create($resourceClass)->getOperation($context['operation_name'] ?? null);
+
+        $parameters = $operation->getParameters();
         $resourceFilters = $operation->getFilters();
-        if (!$resourceFilters) {
+        if (!$resourceFilters && !$parameters) {
             return $data;
         }
 
@@ -124,8 +128,8 @@ final class CollectionFiltersNormalizer implements NormalizerInterface, Normaliz
             }
         }
 
-        if ($currentFilters) {
-            $data['hydra:search'] = $this->getSearch($resourceClass, $requestParts, $currentFilters);
+        if ($currentFilters || ($parameters && \count($parameters))) {
+            $data['hydra:search'] = $this->getSearch($resourceClass, $requestParts, $currentFilters, $parameters);
         }
 
         return $data;
@@ -145,8 +149,9 @@ final class CollectionFiltersNormalizer implements NormalizerInterface, Normaliz
      * Returns the content of the Hydra search property.
      *
      * @param LegacyFilterInterface[]|FilterInterface[] $filters
+     * @param array<string, Parameter>                  $parameters
      */
-    private function getSearch(string $resourceClass, array $parts, array $filters): array
+    private function getSearch(string $resourceClass, array $parts, array $filters, array|Parameters|null $parameters): array
     {
         $variables = [];
         $mapping = [];
@@ -157,6 +162,57 @@ final class CollectionFiltersNormalizer implements NormalizerInterface, Normaliz
             }
         }
 
+        foreach ($parameters ?? [] as $key => $parameter) {
+            // Each IriTemplateMapping maps a variable used in the template to a property
+            if (!$parameter instanceof QueryParameterInterface) {
+                continue;
+            }
+
+            if (!($property = $parameter->getProperty()) && ($filterId = $parameter->getFilter()) && ($filter = $this->getFilter($filterId))) {
+                foreach ($filter->getDescription($resourceClass) as $variable => $description) {
+                    // This is a practice induced by PHP and is not necessary when implementing URI template
+                    if (str_ends_with((string) $variable, '[]')) {
+                        continue;
+                    }
+
+                    // :property is a pattern allowed when defining parameters
+                    $k = str_replace(':property', $description['property'], $key);
+                    $variable = str_replace($description['property'], $k, $variable);
+                    $variables[] = $variable;
+                    $m = ['@type' => 'IriTemplateMapping', 'variable' => $variable, 'property' => $description['property'], 'required' => $description['required']];
+                    if (null !== ($required = $parameter->getRequired())) {
+                        $m['required'] = $required;
+                    }
+                    $mapping[] = $m;
+                }
+
+                continue;
+            }
+
+            if (!$property) {
+                continue;
+            }
+
+            $m = ['@type' => 'IriTemplateMapping', 'variable' => $key, 'property' => $property];
+            $variables[] = $key;
+            if (null !== ($required = $parameter->getRequired())) {
+                $m['required'] = $required;
+            }
+            $mapping[] = $m;
+        }
+
         return ['@type' => 'hydra:IriTemplate', 'hydra:template' => sprintf('%s{?%s}', $parts['path'], implode(',', $variables)), 'hydra:variableRepresentation' => 'BasicRepresentation', 'hydra:mapping' => $mapping];
+    }
+
+    /**
+     * Gets a filter with a backward compatibility.
+     */
+    private function getFilter(string $filterId): LegacyFilterInterface|FilterInterface|null
+    {
+        if ($this->filterLocator && $this->filterLocator->has($filterId)) {
+            return $this->filterLocator->get($filterId);
+        }
+
+        return null;
     }
 }

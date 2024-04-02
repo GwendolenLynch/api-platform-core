@@ -16,11 +16,12 @@ namespace ApiPlatform\Symfony\Bundle\DependencyInjection;
 use ApiPlatform\Doctrine\Common\Filter\OrderFilterInterface;
 use ApiPlatform\Elasticsearch\Metadata\Document\DocumentMetadata;
 use ApiPlatform\Elasticsearch\State\Options;
-use ApiPlatform\Exception\FilterValidationException;
 use ApiPlatform\Exception\InvalidArgumentException;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ApiPlatform\ParameterValidator\Exception\ValidationExceptionInterface;
+use ApiPlatform\Symfony\Controller\MainController;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\Bundle\MongoDBBundle\DoctrineMongoDBBundle;
 use Doctrine\ORM\EntityManagerInterface;
@@ -83,7 +84,8 @@ final class Configuration implements ConfigurationInterface
                     ->defaultValue('0.0.0')
                 ->end()
                 ->booleanNode('show_webby')->defaultTrue()->info('If true, show Webby on the documentation page')->end()
-                ->booleanNode('event_listeners_backward_compatibility_layer')->defaultTrue()->info('If true API Platform uses Symfony event listeners instead of providers and processors.')->end() // TODO: Add link to the documentation
+                ->booleanNode('event_listeners_backward_compatibility_layer')->defaultNull()->info('If true API Platform uses Symfony event listeners instead of providers and processors.')->end() // TODO: Add link to the documentation
+                ->booleanNode('use_symfony_listeners')->defaultFalse()->info(sprintf('Uses Symfony event listeners instead of the %s.', MainController::class))->end() // TODO: Add link to the documentation
                 ->scalarNode('name_converter')->defaultNull()->info('Specify a name converter to use.')->end()
                 ->scalarNode('asset_package')->defaultNull()->info('Specify an asset package name to use.')->end()
                 ->scalarNode('path_segment_name_generator')->defaultValue('api_platform.metadata.path_segment_name_generator.underscore')->info('Specify a path name generator to use.')->end()
@@ -111,6 +113,7 @@ final class Configuration implements ConfigurationInterface
                 ->booleanNode('enable_docs')->defaultTrue()->info('Enable the docs')->end()
                 ->booleanNode('enable_profiler')->defaultTrue()->info('Enable the data collector and the WebProfilerBundle integration.')->end()
                 ->booleanNode('keep_legacy_inflector')->defaultTrue()->info('Keep doctrine/inflector instead of symfony/string to generate plurals for routes.')->end()
+                ->booleanNode('enable_link_security')->defaultFalse()->info('Enable security for Links (sub resources)')->end()
                 ->arrayNode('collection')
                     ->addDefaultsIfNotSet()
                     ->children()
@@ -293,7 +296,7 @@ final class Configuration implements ConfigurationInterface
                                 })
                             ->end()
                             ->validate()
-                                ->ifTrue(static fn($v): bool => $v !== array_intersect($v, $supportedVersions))
+                                ->ifTrue(static fn ($v): bool => $v !== array_intersect($v, $supportedVersions))
                                 ->thenInvalid(sprintf('Only the versions %s are supported. Got %s.', implode(' and ', $supportedVersions), '%s'))
                             ->end()
                             ->prototype('scalar')->end()
@@ -301,7 +304,7 @@ final class Configuration implements ConfigurationInterface
                         ->arrayNode('api_keys')
                             ->useAttributeAsKey('key')
                             ->validate()
-                                ->ifTrue(static fn($v): bool => (bool) array_filter(array_keys($v), fn($item) => !preg_match('/^[a-zA-Z0-9._-]+$/', $item)))
+                                ->ifTrue(static fn ($v): bool => (bool) array_filter(array_keys($v), fn ($item) => !preg_match('/^[a-zA-Z0-9._-]+$/', $item)))
                                 ->thenInvalid('The api keys "key" is not valid according to the pattern enforced by OpenAPI 3.1 ^[a-zA-Z0-9._-]+$.')
                             ->end()
                             ->prototype('array')
@@ -319,7 +322,7 @@ final class Configuration implements ConfigurationInterface
                         ->variableNode('swagger_ui_extra_configuration')
                             ->defaultValue([])
                             ->validate()
-                                ->ifTrue(static fn($v): bool => false === \is_array($v))
+                                ->ifTrue(static fn ($v): bool => false === \is_array($v))
                                 ->thenInvalid('The swagger_ui_extra_configuration parameter must be an array.')
                             ->end()
                             ->info('To pass extra configuration to Swagger UI, like docExpansion or filter.')
@@ -364,7 +367,7 @@ final class Configuration implements ConfigurationInterface
                                 ->variableNode('request_options')
                                     ->defaultValue([])
                                     ->validate()
-                                        ->ifTrue(static fn($v): bool => false === \is_array($v))
+                                        ->ifTrue(static fn ($v): bool => false === \is_array($v))
                                         ->thenInvalid('The request_options parameter must be an array.')
                                     ->end()
                                     ->info('To pass options to the client charged with the request.')
@@ -488,11 +491,12 @@ final class Configuration implements ConfigurationInterface
                         ->variableNode('swagger_ui_extra_configuration')
                             ->defaultValue([])
                             ->validate()
-                                ->ifTrue(static fn($v): bool => false === \is_array($v))
+                                ->ifTrue(static fn ($v): bool => false === \is_array($v))
                                 ->thenInvalid('The swagger_ui_extra_configuration parameter must be an array.')
                             ->end()
                             ->info('To pass extra configuration to Swagger UI, like docExpansion or filter.')
                         ->end()
+                        ->booleanNode('overrideResponses')->defaultTrue()->info('Whether API Platform adds automatic responses to the OpenAPI documentation.')
                     ->end()
                 ->end()
             ->end();
@@ -509,7 +513,7 @@ final class Configuration implements ConfigurationInterface
                     ->defaultValue([
                         SerializerExceptionInterface::class => Response::HTTP_BAD_REQUEST,
                         InvalidArgumentException::class => Response::HTTP_BAD_REQUEST,
-                        FilterValidationException::class => Response::HTTP_BAD_REQUEST,
+                        ValidationExceptionInterface::class => Response::HTTP_BAD_REQUEST,
                         OptimisticLockException::class => Response::HTTP_CONFLICT,
                     ])
                     ->info('The list of exceptions mapped to their HTTP status code.')
@@ -597,7 +601,7 @@ final class Configuration implements ConfigurationInterface
             ->end();
     }
 
-    private function defineDefault(ArrayNodeDefinition $defaultsNode, \ReflectionClass $reflectionClass, CamelCaseToSnakeCaseNameConverter $nameConverter)
+    private function defineDefault(ArrayNodeDefinition $defaultsNode, \ReflectionClass $reflectionClass, CamelCaseToSnakeCaseNameConverter $nameConverter): void
     {
         foreach ($reflectionClass->getConstructor()->getParameters() as $parameter) {
             $defaultsNode->children()->variableNode($nameConverter->normalize($parameter->getName()));

@@ -17,7 +17,7 @@ use ApiPlatform\Metadata\HttpOperation;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\State\ProviderInterface;
-use ApiPlatform\Symfony\Validator\Exception\ValidationException;
+use ApiPlatform\Validator\Exception\ValidationException;
 use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
 use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Exception\PartialDenormalizationException;
@@ -32,7 +32,7 @@ use Symfony\Contracts\Translation\TranslatorTrait;
 
 final class DeserializeProvider implements ProviderInterface
 {
-    public function __construct(private readonly ProviderInterface $decorated, private readonly SerializerInterface $serializer, private readonly SerializerContextBuilderInterface $serializerContextBuilder, private ?TranslatorInterface $translator = null)
+    public function __construct(private readonly ?ProviderInterface $decorated, private readonly SerializerInterface $serializer, private readonly SerializerContextBuilderInterface $serializerContextBuilder, private ?TranslatorInterface $translator = null)
     {
         if (null === $this->translator) {
             $this->translator = new class() implements TranslatorInterface, LocaleAwareInterface {
@@ -44,12 +44,12 @@ final class DeserializeProvider implements ProviderInterface
 
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
     {
-        $data = $this->decorated->provide($operation, $uriVariables, $context);
-
         // We need request content
         if (!$operation instanceof HttpOperation || !($request = $context['request'] ?? null)) {
-            return $data;
+            return $this->decorated?->provide($operation, $uriVariables, $context);
         }
+
+        $data = $this->decorated ? $this->decorated->provide($operation, $uriVariables, $context) : $request->attributes->get('data');
 
         if (!$operation->canDeserialize()) {
             return $data;
@@ -87,6 +87,10 @@ final class DeserializeProvider implements ProviderInterface
         try {
             return $this->serializer->deserialize((string) $request->getContent(), $operation->getClass(), $format, $serializerContext);
         } catch (PartialDenormalizationException $e) {
+            if (!class_exists(ConstraintViolationList::class)) {
+                throw $e;
+            }
+
             $violations = new ConstraintViolationList();
             foreach ($e->getErrors() as $exception) {
                 if (!$exception instanceof NotNormalizableValueException) {

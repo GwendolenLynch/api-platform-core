@@ -75,7 +75,7 @@ final class UriTemplateResourceMetadataCollectionFactory implements ResourceMeta
                         $operation = $operation->withName($routeName);
                     }
 
-                    $operations->add($routeName, $operation);
+                    $operations->add($operation->getName(), $operation);
                     continue;
                 }
 
@@ -155,7 +155,8 @@ final class UriTemplateResourceMetadataCollectionFactory implements ResourceMeta
             return $operation;
         }
 
-        foreach ($uriVariables = $operation->getUriVariables() as $parameterName => $link) {
+        foreach ($uriVariables = $operation->getUriVariables() as $parameterName => $l) {
+            $link = null === $l->getFromClass() ? $l->withFromClass($operation->getClass()) : $l;
             $uriVariables[$parameterName] = $this->linkFactory->completeLink($link);
         }
         $operation = $operation->withUriVariables($uriVariables);

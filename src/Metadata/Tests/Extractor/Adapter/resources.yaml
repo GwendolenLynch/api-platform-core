@@ -44,6 +44,8 @@ resources:
                     host: api-platform.com
                     schemes:
                         - https
+                    headers:
+                        key: value
                     condition: "request.headers.has('Accept')"
                     controller: App\Controller\CustomController
                     class: ApiPlatform\Metadata\GetCollection
@@ -117,6 +119,11 @@ resources:
                         -
                             rel: 'http://www.w3.org/ns/json-ld#error'
                             href: 'http://www.w3.org/ns/hydra/error'
+                    parameters:
+                        author:
+                            key: author
+                            required: true
+                            schema: { type: string }
                 -
                     uriTemplate: '/users/{userId}/comments/{commentId}{._format}'
                     class: ApiPlatform\Metadata\Get
@@ -165,6 +172,7 @@ resources:
             class: null
             urlGenerationStrategy: 1
             deprecationReason: 'This resource is deprecated'
+            headers: null
             cacheHeaders:
                 max_age: 60
                 shared_max_age: 120
@@ -327,6 +335,7 @@ resources:
                 elasticsearchOptions:
                     index: foo_index
                     type: foo_type
+            parameters: null
             extraProperties:
                 custom_property: 'Lorem ipsum dolor sit amet'
                 another_custom_property:

@@ -20,6 +20,7 @@ use ApiPlatform\JsonLd\ContextBuilderInterface;
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\CollectionOperationInterface;
+use ApiPlatform\Metadata\ErrorResource;
 use ApiPlatform\Metadata\HttpOperation;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
@@ -29,6 +30,7 @@ use ApiPlatform\Metadata\Resource\ResourceMetadataCollection;
 use ApiPlatform\Metadata\ResourceClassResolverInterface;
 use ApiPlatform\Metadata\UrlGeneratorInterface;
 use ApiPlatform\Serializer\CacheableSupportsMethodInterface;
+use ApiPlatform\Symfony\Validator\Exception\ValidationException;
 use Symfony\Component\PropertyInfo\Type;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -60,6 +62,10 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
             $resourceMetadataCollection = $this->resourceMetadataFactory->create($resourceClass);
 
             $resourceMetadata = $resourceMetadataCollection[0];
+            if ($resourceMetadata instanceof ErrorResource && ValidationException::class === $resourceMetadata->getClass()) {
+                continue;
+            }
+
             $shortName = $resourceMetadata->getShortName();
             $prefixedShortName = $resourceMetadata->getTypes()[0] ?? "#$shortName";
             $this->populateEntrypointProperties($resourceMetadata, $shortName, $prefixedShortName, $entrypointProperties, $resourceMetadataCollection);
@@ -498,22 +504,22 @@ final class DocumentationNormalizer implements NormalizerInterface, CacheableSup
             $iri = "#$shortName/$propertyName";
         }
 
-        $propertyData = [
+        $propertyData = ($propertyMetadata->getJsonldContext()['hydra:property'] ?? []) + [
             '@id' => $iri,
             '@type' => false === $propertyMetadata->isReadableLink() ? 'hydra:Link' : 'rdf:Property',
             'rdfs:label' => $propertyName,
             'domain' => $prefixedShortName,
         ];
 
-        if ($propertyMetadata->getDeprecationReason()) {
+        if (!isset($propertyData['owl:deprecated']) && $propertyMetadata->getDeprecationReason()) {
             $propertyData['owl:deprecated'] = true;
         }
 
-        if ($this->isSingleRelation($propertyMetadata)) {
+        if (!isset($propertyData['owl:maxCardinality']) && $this->isSingleRelation($propertyMetadata)) {
             $propertyData['owl:maxCardinality'] = 1;
         }
 
-        if (null !== $range = $this->getRange($propertyMetadata)) {
+        if (!isset($propertyData['range']) && null !== $range = $this->getRange($propertyMetadata)) {
             $propertyData['range'] = $range;
         }
 

@@ -66,6 +66,8 @@ use ApiPlatform\Tests\Fixtures\TestBundle\Document\IriOnlyDummy as IriOnlyDummyD
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\LinkHandledDummy as LinkHandledDummyDocument;
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\MaxDepthDummy as MaxDepthDummyDocument;
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\MultiRelationsDummy as MultiRelationsDummyDocument;
+use ApiPlatform\Tests\Fixtures\TestBundle\Document\MultiRelationsNested as MultiRelationsNestedDocument;
+use ApiPlatform\Tests\Fixtures\TestBundle\Document\MultiRelationsNestedPaginated as MultiRelationsNestedPaginatedDocument;
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\MultiRelationsRelatedDummy as MultiRelationsRelatedDummyDocument;
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\MusicGroup as MusicGroupDocument;
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\NetworkPathDummy as NetworkPathDummyDocument;
@@ -83,6 +85,7 @@ use ApiPlatform\Tests\Fixtures\TestBundle\Document\PropertyCollectionIriOnlyRela
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\PropertyUriTemplateOneToOneRelation as PropertyUriTemplateOneToOneRelationDocument;
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\Question as QuestionDocument;
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\RelatedDummy as RelatedDummyDocument;
+use ApiPlatform\Tests\Fixtures\TestBundle\Document\RelatedLinkedDummy as RelatedLinkedDummyDocument;
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\RelatedOwnedDummy as RelatedOwnedDummyDocument;
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\RelatedOwningDummy as RelatedOwningDummyDocument;
 use ApiPlatform\Tests\Fixtures\TestBundle\Document\RelatedSecuredDummy as RelatedSecuredDummyDocument;
@@ -155,9 +158,12 @@ use ApiPlatform\Tests\Fixtures\TestBundle\Entity\IriOnlyDummy;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\Issue5722\Event;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\Issue5722\ItemLog;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\Issue5735\Group;
+use ApiPlatform\Tests\Fixtures\TestBundle\Entity\Issue6039\Issue6039EntityUser;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\LinkHandledDummy;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\MaxDepthDummy;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\MultiRelationsDummy;
+use ApiPlatform\Tests\Fixtures\TestBundle\Entity\MultiRelationsNested;
+use ApiPlatform\Tests\Fixtures\TestBundle\Entity\MultiRelationsNestedPaginated;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\MultiRelationsRelatedDummy;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\MusicGroup;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\NetworkPathDummy;
@@ -177,6 +183,7 @@ use ApiPlatform\Tests\Fixtures\TestBundle\Entity\PropertyUriTemplateOneToOneRela
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\Question;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\RamseyUuidDummy;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\RelatedDummy;
+use ApiPlatform\Tests\Fixtures\TestBundle\Entity\RelatedLinkedDummy;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\RelatedOwnedDummy;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\RelatedOwningDummy;
 use ApiPlatform\Tests\Fixtures\TestBundle\Entity\RelatedSecuredDummy;
@@ -802,9 +809,9 @@ final class DoctrineContext implements Context
     }
 
     /**
-     * @Given there are :nb multiRelationsDummy objects having each a manyToOneRelation, :nbmtmr manyToManyRelations and :nbotmr oneToManyRelations
+     * @Given there are :nb multiRelationsDummy objects having each a manyToOneRelation, :nbmtmr manyToManyRelations, :nbotmr oneToManyRelations and :nber embeddedRelations
      */
-    public function thereAreMultiRelationsDummyObjectsHavingEachAManyToOneRelationManyToManyRelationsAndOneToManyRelations(int $nb, int $nbmtmr, int $nbotmr): void
+    public function thereAreMultiRelationsDummyObjectsHavingEachAManyToOneRelationManyToManyRelationsOneToManyRelationsAndEmbeddedRelations(int $nb, int $nbmtmr, int $nbotmr, int $nber): void
     {
         for ($i = 1; $i <= $nb; ++$i) {
             $relatedDummy = $this->buildMultiRelationsRelatedDummy();
@@ -830,6 +837,22 @@ final class DoctrineContext implements Context
 
                 $dummy->addOneToManyRelation($oneToManyItem);
             }
+
+            $nested = new ArrayCollection();
+            for ($j = 1; $j <= $nber; ++$j) {
+                $embeddedItem = $this->buildMultiRelationsNested();
+                $embeddedItem->name = 'NestedDummy'.$j;
+                $nested->add($embeddedItem);
+            }
+            $dummy->setNestedCollection($nested);
+
+            $nestedPaginated = new ArrayCollection();
+            for ($j = 1; $j <= $nber; ++$j) {
+                $embeddedItem = $this->buildMultiRelationsNestedPaginated();
+                $embeddedItem->name = 'NestedPaginatedDummy'.$j;
+                $nestedPaginated->add($embeddedItem);
+            }
+            $dummy->setNestedPaginatedCollection($nestedPaginated);
 
             $this->manager->persist($relatedDummy);
             $this->manager->persist($dummy);
@@ -1178,12 +1201,16 @@ final class DoctrineContext implements Context
             $publicRelatedSecuredDummy = $this->buildRelatedSecureDummy();
             $this->manager->persist($publicRelatedSecuredDummy);
 
+            $relatedLinkedDummy = $this->buildRelatedLinkedDummy();
+            $this->manager->persist($relatedLinkedDummy);
+
             $securedDummy->addRelatedDummy($relatedDummy);
             $securedDummy->setRelatedDummy($relatedDummy);
             $securedDummy->addRelatedSecuredDummy($relatedSecuredDummy);
             $securedDummy->setRelatedSecuredDummy($relatedSecuredDummy);
             $securedDummy->addPublicRelatedSecuredDummy($publicRelatedSecuredDummy);
             $securedDummy->setPublicRelatedSecuredDummy($publicRelatedSecuredDummy);
+            $relatedLinkedDummy->setSecuredDummy($securedDummy);
 
             $this->manager->persist($securedDummy);
         }
@@ -2270,6 +2297,22 @@ final class DoctrineContext implements Context
         $this->manager->flush();
     }
 
+    /**
+     * @Given there are issue6039 users
+     */
+    public function thereAreIssue6039Users(): void
+    {
+        $entity = new Issue6039EntityUser();
+        $entity->name = 'test';
+        $entity->bar = 'test';
+        $this->manager->persist($entity);
+        $entity = new Issue6039EntityUser();
+        $entity->name = 'test2';
+        $entity->bar = 'test';
+        $this->manager->persist($entity);
+        $this->manager->flush();
+    }
+
     private function isOrm(): bool
     {
         return null !== $this->schemaTool;
@@ -2490,6 +2533,11 @@ final class DoctrineContext implements Context
         return $this->isOrm() ? new RelatedToDummyFriend() : new RelatedToDummyFriendDocument();
     }
 
+    private function buildRelatedLinkedDummy(): RelatedLinkedDummy|RelatedLinkedDummyDocument
+    {
+        return $this->isOrm() ? new RelatedLinkedDummy() : new RelatedLinkedDummyDocument();
+    }
+
     private function buildRelationEmbedder(): RelationEmbedder|RelationEmbedderDocument
     {
         return $this->isOrm() ? new RelationEmbedder() : new RelationEmbedderDocument();
@@ -2608,6 +2656,16 @@ final class DoctrineContext implements Context
     private function buildMultiRelationsRelatedDummy(): MultiRelationsRelatedDummy|MultiRelationsRelatedDummyDocument
     {
         return $this->isOrm() ? new MultiRelationsRelatedDummy() : new MultiRelationsRelatedDummyDocument();
+    }
+
+    private function buildMultiRelationsNested(): MultiRelationsNested|MultiRelationsNestedDocument
+    {
+        return $this->isOrm() ? new MultiRelationsNested() : new MultiRelationsNestedDocument();
+    }
+
+    private function buildMultiRelationsNestedPaginated(): MultiRelationsNestedPaginated|MultiRelationsNestedPaginatedDocument
+    {
+        return $this->isOrm() ? new MultiRelationsNestedPaginated() : new MultiRelationsNestedPaginatedDocument();
     }
 
     private function buildMusicGroup(): MusicGroup|MusicGroupDocument

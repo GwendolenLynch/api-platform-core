@@ -25,6 +25,8 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * Generates the API entrypoint.
  *
+ * @deprecated use ApiPlatform\Symfony\EntrypointAction instead
+ *
  * @author Kévin Dunglas <dunglas@gmail.com>
  */
 final class EntrypointAction
@@ -47,7 +49,13 @@ final class EntrypointAction
             'spec_version' => (string) $request->query->get(LegacyOpenApiNormalizer::SPEC_VERSION),
         ];
         $request->attributes->set('_api_platform_disable_listeners', true);
-        $operation = new Get(outputFormats: $this->documentationFormats, read: true, serialize: true, class: Entrypoint::class, provider: [self::class, 'provide']);
+        $operation = new Get(
+            outputFormats: $this->documentationFormats,
+            read: true,
+            serialize: true,
+            class: Entrypoint::class,
+            provider: [self::class, 'provide']
+        );
         $request->attributes->set('_api_operation', $operation);
         $body = $this->provider->provide($operation, [], $context);
         $operation = $request->attributes->get('_api_operation');
