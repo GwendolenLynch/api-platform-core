@@ -30,6 +30,10 @@
             <argument type="tagged_locator" tag="api_platform.parameter_provider" index-by="key" />
         </service>
 
+        <service id="api_platform.state_provider.backed_enum" class="ApiPlatform\State\Provider\BackedEnumProvider" decorates="api_platform.state_provider.main" decoration-priority="300">
+            <argument type="service" id="api_platform.state_provider.backed_enum.inner" />
+        </service>
+
         <service id="api_platform.error_listener" class="ApiPlatform\Symfony\EventListener\ErrorListener">
             <argument key="$controller">api_platform.symfony.main_controller</argument>
             <argument key="$logger" type="service" id="logger" on-invalid="null" />
