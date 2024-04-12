@@ -88,6 +88,10 @@ trait OperationDefaultsTrait
 
     private function getDefaultHttpOperations($resource): iterable
     {
+        if (enum_exists($resource->getClass())) {
+            return new Operations([new GetCollection(), new Get()]);
+        }
+
         if (($defaultOperations = $this->defaults['operations'] ?? null) && null === $resource->getOperations()) {
             $operations = [];
 
