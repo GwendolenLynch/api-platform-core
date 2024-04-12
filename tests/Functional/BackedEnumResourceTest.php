@@ -15,6 +15,7 @@ namespace ApiPlatform\Tests\Functional;
 
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Link;
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use ApiPlatform\Tests\Fixtures\TestBundle\ApiResource\BackedEnumIntegerResource;
 use ApiPlatform\Tests\Fixtures\TestBundle\ApiResource\BackedEnumStringResource;
@@ -42,5 +43,66 @@ final class BackedEnumResourceTest extends ApiTestCase
         $this->assertCount(2, $operations);
 
         $this->assertInstanceOf($operationClass, $operations[$operationName]);
+    }
+
+    public function testEnumsAreAssignedValuePropertyAsIdentifierByDefault(): void
+    {
+        $linkFactory = self::getContainer()->get('api_platform.metadata.resource.link_factory');
+        $result = $linkFactory->completeLink(new Link(fromClass: BackedEnumIntegerResource::class));
+        $identifiers = $result->getIdentifiers();
+
+        $this->assertCount(1, $identifiers);
+        $this->assertNotContains('id', $identifiers);
+        $this->assertContains('value', $identifiers);
+    }
+
+    public function testCollection(): void
+    {
+        self::createClient()->request('GET', '/backed_enum_integer_resources', ['headers' => ['Accept' => 'application/json']]);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertJsonEquals([
+            [
+                'name' => 'Yes',
+                'value' => 1,
+                'description' => 'We say yes',
+            ],
+            [
+                'name' => 'No',
+                'value' => 2,
+                'description' => 'Computer says no',
+            ],
+            [
+                'name' => 'Maybe',
+                'value' => 3,
+                'description' => 'Let me think about it',
+            ],
+        ]);
+    }
+
+    public function testItem(): void
+    {
+        self::createClient()->request('GET', '/backed_enum_integer_resources/1', ['headers' => ['Accept' => 'application/json']]);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertJsonEquals([
+            'name' => 'Yes',
+            'value' => 1,
+            'description' => 'We say yes',
+        ]);
+    }
+
+    public static function provider404s(): iterable
+    {
+        yield ['/backed_enum_integer_resources/42'];
+        yield ['/backed_enum_integer_resources/fortytwo'];
+    }
+
+    /** @dataProvider provider404s */
+    public function testItem404(string $uri): void
+    {
+        self::createClient()->request('GET', $uri);
+
+        $this->assertResponseStatusCodeSame(404);
     }
 }
